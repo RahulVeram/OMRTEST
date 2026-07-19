@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OMR Practice Workspace</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #050505;
+        }
+        /* Selected option premium highlight */
+        .omr-bubble:checked + label {
+            background-color: #3b82f6 !important;
+            color: #ffffff !important;
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.45);
+        }
+        /* Evaluation toggles configuration */
+        .status-btn.active-right {
+            background-color: #064e3b !important;
+            color: #34d399 !important;
+            border-color: #059669 !important;
+            box-shadow: 0 0 10px rgba(5, 150, 105, 0.2);
+        }
+        .status-btn.active-wrong {
+            background-color: #7f1d1d !important;
+            color: #f87171 !important;
+            border-color: #dc2626 !important;
+            box-shadow: 0 0 10px rgba(220, 38, 38, 0.2);
+        }
+        /* Custom minimalist scrollbar configurations */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050505;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1f1f1f;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2a2a2a;
+        }
+    </style>
+</head>
+<body class="min-h-screen text-neutral-200 flex antialiased overflow-x-hidden bg-[#050505]">
+
+    <!-- Custom minimalist Toast Notification Banner -->
+    <div id="toastContainer" class="fixed top-5 right-5 z-[120] transition-all transform translate-y-[-20px] opacity-0 pointer-events-none max-w-sm">
+        <div id="toastMessage" class="bg-neutral-900 border border-neutral-800 text-neutral-200 text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2">
+            <span id="toastIcon">✨</span>
+            <span id="toastText">Action completed successfully.</span>
+        </div>
+    </div>
+
+    <!-- OTP Code Display Alert Header Banner -->
+    <div id="otpDisplayBanner" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[120] transition-all duration-500 opacity-0 -translate-y-10 pointer-events-none max-w-md w-full px-4">
+        <div class="bg-neutral-900 text-neutral-200 p-4 rounded-2xl shadow-2xl border-l-4 border-indigo-500 flex items-start gap-3 border border-neutral-800">
+            <div class="bg-indigo-950/50 text-indigo-400 p-2.5 rounded-full text-xl flex items-center justify-center shrink-0 border border-indigo-900/50">
+                🔒
+            </div>
+            <div class="flex-grow">
+                <div class="flex justify-between items-center">
+                    <span class="font-bold text-xs text-indigo-400 flex items-center gap-1">One-Time Password (OTP)</span>
+                    <span class="text-[10px] text-neutral-500">System Notification</span>
+                </div>
+                <p class="text-xs mt-1 font-medium text-neutral-300">Your verification passkey is <strong class="text-indigo-300 tracking-wider text-sm font-bold bg-indigo-950/40 px-2 py-0.5 rounded border border-indigo-900/40" id="otpDisplayCode">------</strong>. Use it below to load your workspace.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirmation Modal -->
+    <div id="confirmModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[150] flex items-center justify-center hidden">
+        <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl text-center">
+            <h3 class="font-bold text-neutral-100 text-base mb-2" id="confirmTitle">Confirm Action</h3>
+            <p class="text-xs text-neutral-400 mb-6" id="confirmText">Are you sure you want to proceed?</p>
+            <div class="flex gap-2 justify-center">
+                <button id="confirmCancelBtn" class="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition">Cancel</button>
+                <button id="confirmProceedBtn" class="px-4 py-2 bg-neutral-100 hover:bg-white text-neutral-950 rounded-xl text-xs font-bold transition">Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Edit Modal -->
+    <div id="profileModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-[150] flex items-center justify-center hidden">
+        <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <div class="text-center mb-5">
+                <span class="inline-flex p-3 bg-neutral-800/80 border border-neutral-700 rounded-2xl text-xl mb-2">👤</span>
+                <h3 class="font-bold text-neutral-100 text-base">Candidate Profile</h3>
+                <p class="text-[10px] text-neutral-500">Configure personalization tags for reports and dashboard analytics.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Candidate Name</label>
+                    <input type="text" id="profileNameInput" class="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-neutral-700 text-xs text-neutral-200 font-medium" placeholder="E.g., Ramesh Kumar">
+                </div>
+                <div>
+                    <label class="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Email Address</label>
+                    <input type="email" id="profileEmailInput" class="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-neutral-700 text-xs text-neutral-200 font-medium" placeholder="E.g., ramesh@gmail.com">
+                </div>
+                <div>
+                    <label class="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Target Exam / Specialization</label>
+                    <input type="text" id="profileExamInput" class="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-neutral-700 text-xs text-neutral-200 font-medium" placeholder="E.g., SSC CGL, JEE Main, UPSC GS">
+                </div>
+                <div>
+                    <label class="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Profile Photo URL</label>
+                    <input type="url" id="profilePhotoInput" class="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-neutral-700 text-xs text-neutral-200 font-medium" placeholder="https://example.com/avatar.jpg">
+                    <p class="text-[8px] text-neutral-500 mt-1">Leave empty to use custom Avatar symbol selection below.</p>
+                </div>
+                <div>
+                    <label class="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Or Avatar Symbol</label>
+                    <div class="grid grid-cols-6 gap-2 mt-1" id="avatarSelectorGrid">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-2 justify-end mt-6">
+                <button onclick="closeProfileModal()" class="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition">Cancel</button>
+                <button onclick="saveProfileData()" class="px-4 py-2 bg-neutral-100 hover:bg-white text-neutral-950 rounded-xl text-xs font-bold transition">Save & Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Minimal Collapsible Navigation Side Rail (Visible only after successful OTP validation) -->
+    <aside id="appSidebar" class="hidden h-screen bg-[#070707] border-r border-neutral-900 flex-col justify-between transition-all duration-300 z-50 fixed left-0 top-0 w-16">
+        
+        <!-- Top part of side bar -->
+        <div class="flex flex-col items-center gap-6 pt-6">
+            <!-- Home / Onboarding Button -->
+            <button onclick="goHome()" class="group relative w-10 h-10 flex items-center justify-center rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-200 hover:text-white transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <!-- Tooltip label -->
+                <div class="absolute left-full ml-3 px-2.5 py-1.5 bg-neutral-900 border border-neutral-800 text-[10px] font-semibold text-neutral-200 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-[100] shadow-2xl">
+                    Select Test Category (Home)
+                </div>
+            </button>
+
+            <!-- Line Divider -->
+            <div class="w-8 h-[1px] bg-neutral-900"></div>
+
+            <!-- Dashboard Analytics Timeline Button -->
+            <button onclick="switchTab('progress')" id="sideTabProgressBtn" class="group relative w-10 h-10 flex items-center justify-center rounded-xl hover:bg-neutral-900 hover:border hover:border-neutral-800 text-neutral-400 hover:text-white transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2m0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <div class="absolute left-full ml-3 px-2.5 py-1.5 bg-neutral-900 border border-neutral-800 text-[10px] font-semibold text-neutral-200 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-[100] shadow-2xl">
+                    Performance Logs & Timeline
+                </div>
+            </button>
+        </div>
+
+        <!-- Bottom part of side bar -->
+        <div class="flex flex-col items-center gap-4 pb-6 relative">
+            <!-- Gear/Settings Option Trigger (Opens candidate customization) -->
+            <button onclick="openProfileModal()" class="group relative w-10 h-10 flex items-center justify-center rounded-xl hover:bg-neutral-900 hover:border hover:border-neutral-800 text-neutral-400 hover:text-white transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <div class="absolute left-full ml-3 px-2.5 py-1.5 bg-neutral-900 border border-neutral-800 text-[10px] font-semibold text-neutral-200 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-[100] shadow-2xl">
+                    Profile Configurations
+                </div>
+            </button>
+
+            <!-- Line Divider -->
+            <div class="w-8 h-[1px] bg-neutral-900"></div>
+
+            <!-- Profile Dropdown Trigger Avatar -->
+            <div class="relative group">
+                <button id="profileDropdownBtn" onclick="toggleProfileDropdown()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-neutral-900 border border-neutral-800 hover:border-neutral-700 transition relative overflow-hidden">
+                    <img id="headerUserPhoto" class="w-full h-full object-cover hidden" src="" alt="Profile">
+                    <span id="headerUserAvatar" class="text-sm font-bold text-neutral-300">👤</span>
+                </button>
+                <div class="absolute left-full ml-3 px-2.5 py-1.5 bg-neutral-900 border border-neutral-800 text-[10px] font-semibold text-neutral-200 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-[100] shadow-2xl">
+                    Account Menu
+                </div>
+            </div>
+
+            <!-- Clean Dropdown Card for Multi-User Management -->
+            <div id="profileDropdown" class="hidden absolute left-14 bottom-0 w-56 bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl p-4 z-50">
+                <div class="border-b border-neutral-800 pb-3 mb-3">
+                    <p class="text-xs font-bold text-neutral-100" id="dropdownUserName">Guest Student</p>
+                    <p class="text-[9px] text-neutral-500 font-medium tracking-wide mt-0.5" id="dropdownUserSub">Target Exam</p>
+                </div>
+                <div class="space-y-1">
+                    <button onclick="openProfileModal(); toggleProfileDropdown();" class="w-full text-left px-3 py-2 text-xs text-neutral-300 hover:bg-neutral-800 rounded-xl transition flex items-center gap-2">
+                        <span>✏️</span> Edit Profile
+                    </button>
+                    <button onclick="handleSignOut(); toggleProfileDropdown();" class="w-full text-left px-3 py-2 text-xs text-rose-400 hover:bg-rose-950/20 rounded-xl transition flex items-center gap-2">
+                        <span>🚪</span> Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- App layout content wrapper with side rail spacing offset and full width constraints -->
+    <div id="appContentWrapper" class="flex-1 min-h-screen flex flex-col transition-all duration-300 pl-0 w-full min-w-0">
+
+        <!-- Authentication Screen Gate -->
+        <div id="authScreen" class="flex-grow flex items-center justify-center p-6">
+            <div class="max-w-sm w-full bg-neutral-900/60 rounded-3xl border border-neutral-800/80 p-8 shadow-2xl">
+                <div id="otpAuthContainer">
+                    <!-- Mobile Number Input Stage -->
+                    <div id="otpInputStage" class="space-y-4">
+                        <div class="text-center mb-4">
+                            <h2 class="text-base font-bold text-neutral-100 tracking-tight">Access Practice Sheet</h2>
+                            <p class="text-[10px] text-neutral-500 mt-1">Enter your phone number to sign in and securely preserve test logs.</p>
+                        </div>
+                        <div>
+                            <div class="flex">
+                                <span class="inline-flex items-center px-3.5 rounded-l-xl border border-r-0 border-neutral-800 bg-neutral-950 text-neutral-500 text-xs font-bold">+91</span>
+                                <input type="tel" id="authMobile" maxlength="10" required class="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-r-xl focus:outline-none focus:ring-1 focus:ring-neutral-700 text-sm text-neutral-200 font-medium tracking-wide" placeholder="Enter 10-digit number">
+                            </div>
+                        </div>
+                        <button onclick="sendMockOTP()" class="w-full py-2.5 bg-white hover:bg-neutral-100 text-neutral-950 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-lg">
+                            Get OTP Code
+                        </button>
+                    </div>
+
+                    <!-- OTP Verification Input Stage -->
+                    <div id="otpVerifyStage" class="hidden space-y-4">
+                        <div class="text-center mb-2">
+                            <h2 class="text-base font-bold text-neutral-100 tracking-tight">Verify Code</h2>
+                            <p class="text-[10px] text-neutral-500 mt-1">Enter verification OTP code generated for your device</p>
+                        </div>
+                        <div>
+                            <input type="text" id="authOtpCode" maxlength="6" class="w-full px-3.5 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl focus:outline-none focus:ring-1 focus:ring-neutral-700 text-center text-lg font-bold tracking-widest text-neutral-200" placeholder="••••••">
+                        </div>
+                        <div class="flex justify-between items-center text-[10px]">
+                            <button onclick="sendMockOTP()" id="resendOtpBtn" class="text-neutral-400 font-semibold hover:underline" disabled>Resend OTP (30s)</button>
+                            <button onclick="backToOtpRequest()" class="text-neutral-500 font-semibold hover:underline">Change Number</button>
+                        </div>
+                        <button onclick="verifyMockOTP()" class="w-full py-2.5 bg-white hover:bg-neutral-100 text-neutral-950 rounded-xl text-xs font-bold transition shadow-lg">
+                            Verify & Load
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen 1: Subject Selection (Sleek Minimal Onboarding) -->
+        <div id="subjectScreen" class="hidden flex-grow flex items-center justify-center p-6 w-full">
+            <div class="max-w-md w-full bg-[#0d0d0d] rounded-3xl border border-neutral-800 p-8 text-center shadow-2xl relative">
+                <!-- Sidebar collapse button dynamically placed here in Home view -->
+                <button onclick="toggleSidebarDrawer()" class="absolute top-4 left-4 group w-8 h-8 flex items-center justify-center rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition" title="Toggle Sidebar">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+
+                <h2 class="text-base font-bold text-neutral-100 tracking-tight mt-2">Select Test Category</h2>
+                <p class="text-neutral-500 text-[11px] mt-1">Choose category target to initialize matrix grids.</p>
+                
+                <div class="grid grid-cols-1 gap-2 mt-6">
+                    <button onclick="selectSubject('Computer Science', 'bg-blue-950/40 text-blue-400 border-blue-900/50')" class="p-3 border border-neutral-800 rounded-xl flex items-center gap-3 hover:border-neutral-700 hover:bg-neutral-800/40 transition">
+                        <span class="p-2 bg-neutral-800 rounded-lg text-sm">💻</span>
+                        <span class="font-bold text-neutral-200 text-xs block">Computer CS</span>
+                    </button>
+
+                    <button onclick="selectSubject('GK / GS General Studies', 'bg-emerald-950/40 text-emerald-400 border-emerald-900/50')" class="p-3 border border-neutral-800 rounded-xl flex items-center gap-3 hover:border-neutral-700 hover:bg-neutral-800/40 transition">
+                        <span class="p-2 bg-neutral-800 rounded-lg text-sm">🌍</span>
+                        <span class="font-bold text-neutral-200 text-xs block">GK & GS</span>
+                    </button>
+
+                    <button onclick="selectSubject('Reasoning Ability', 'bg-purple-950/40 text-purple-400 border-purple-900/50')" class="p-3 border border-neutral-800 rounded-xl flex items-center gap-3 hover:border-purple-900/50 hover:bg-neutral-800/40 transition">
+                        <span class="p-2 bg-neutral-800 rounded-lg text-sm">🧠</span>
+                        <span class="font-bold text-neutral-200 text-xs block">Reasoning</span>
+                    </button>
+
+                    <button onclick="selectSubject('Mixed Syllabus', 'bg-amber-950/40 text-amber-400 border-amber-900/50')" class="p-3 border border-neutral-800 rounded-xl flex items-center gap-3 hover:border-neutral-700 hover:bg-neutral-800/40 transition">
+                        <span class="p-2 bg-neutral-800 rounded-lg text-sm">📚</span>
+                        <span class="font-bold text-neutral-200 text-xs block">Mixed Syllabus</span>
+                    </button>
+
+                    <button onclick="selectSubject('Full Mock Paper', 'bg-rose-950/40 text-rose-400 border-rose-900/50')" class="p-3 border border-neutral-800 rounded-xl flex items-center gap-3 hover:border-neutral-700 hover:bg-neutral-800/40 transition">
+                        <span class="p-2 bg-neutral-800 rounded-lg text-sm">🏆</span>
+                        <span class="font-bold text-neutral-200 text-xs block">Full Mock Paper</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Focus Mode Header/Bar (Visible *only* when in focus mode) -->
+        <div id="focusHeaderBar" class="hidden fixed top-0 left-0 right-0 bg-neutral-950/90 backdrop-blur border-b border-neutral-900 py-3.5 px-6 z-50 justify-between items-center shadow-xl animate-fade-in">
+            <div class="flex items-center gap-4">
+                <!-- Home Button accessible inside active Focus Mode -->
+                <button onclick="goHome()" class="px-4 py-2 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                    <span>🏠</span> Home
+                </button>
+                <div class="flex items-center gap-2">
+                    <span id="focusIndicatorDot" class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                    <span id="focusIndicatorText" class="text-xs font-bold text-neutral-200 uppercase tracking-wider animate-pulse">Exam Focus Mode Active</span>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <!-- PAUSE / RESUME ACTION BUTTON -->
+                <button id="focusPauseBtn" onclick="togglePause()" class="px-3.5 py-1.5 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-300 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                    <span id="pauseBtnIcon">⏸️</span> <span id="pauseBtnText">Pause</span>
+                </button>
+
+                <!-- EDIT CONFIGS INSIDE FOCUS MODE BUTTON -->
+                <button onclick="openFocusEditModal()" class="px-3.5 py-1.5 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-300 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+                    <span>⚙️</span> Edit Settings
+                </button>
+
+                <div class="bg-neutral-900 border border-neutral-800 px-4 py-1.5 rounded-xl text-center flex items-center gap-2">
+                    <span id="focusTimerLabel" class="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Time:</span>
+                    <span id="focusTimerDisplay" class="text-sm font-mono font-bold text-white">00:00</span>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button onclick="calculateScorePrompt()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition shadow-lg">
+                        Grade & Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Focus Edit Settings Modal -->
+        <div id="focusEditModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[100] flex items-center justify-center hidden">
+            <div class="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 max-w-sm w-full mx-4 shadow-2xl">
+                <div class="text-center mb-5 border-b border-neutral-800/60 pb-3">
+                    <span class="inline-flex p-3 bg-neutral-800/80 border border-neutral-700 rounded-2xl text-lg mb-1">⚙️</span>
+                    <h3 class="font-bold text-neutral-100 text-sm">Edit Sheet Configurations</h3>
+                    <p class="text-[9px] text-neutral-500">Modify live sheet parameters without leaving Focus Mode.</p>
+                </div>
+                
+                <div class="space-y-5">
+                    <!-- Size presets -->
+                    <div>
+                        <span class="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-2">Question Size Presets</span>
+                        <div class="grid grid-cols-4 gap-1.5">
+                            <button onclick="updateFocusQuestionPreset(10)" class="focus-preset-btn py-1.5 bg-neutral-950 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 rounded-lg text-xs font-semibold transition" id="focusPreset10">10</button>
+                            <button onclick="updateFocusQuestionPreset(20)" class="focus-preset-btn py-1.5 bg-neutral-950 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 rounded-lg text-xs font-semibold transition" id="focusPreset20">20</button>
+                            <button onclick="updateFocusQuestionPreset(50)" class="focus-preset-btn py-1.5 bg-neutral-950 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 rounded-lg text-xs font-semibold transition" id="focusPreset50">50</button>
+                            <button onclick="updateFocusQuestionPreset(100)" class="focus-preset-btn py-1.5 bg-neutral-950 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 rounded-lg text-xs font-semibold transition" id="focusPreset100">100</button>
+                        </div>
+                    </div>
+
+                    <!-- Test Modification (+1 / -1) -->
+                    <div>
+                        <span class="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-2">Test Modification</span>
+                        <div class="flex items-center justify-between px-3 py-1.5 bg-neutral-950 rounded-xl border border-neutral-800">
+                            <span class="text-[9px] text-neutral-500 font-medium">Add/Remove Rows:</span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="adjustQuestionsInFocus(-1)" class="w-6 h-6 rounded bg-neutral-900 border border-neutral-800 font-bold text-xs hover:bg-neutral-800 transition text-neutral-300">-1</button>
+                                <span id="displayFocusTotalCount" class="w-8 text-center font-bold text-neutral-300 text-xs">20</span>
+                                <button onclick="adjustQuestionsInFocus(1)" class="w-6 h-6 rounded bg-neutral-900 border border-neutral-800 font-bold text-xs hover:bg-neutral-800 transition text-neutral-300">+1</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Timer configuration -->
+                    <div>
+                        <span class="block text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-2">Timer Configurations</span>
+                        <div class="flex items-center mb-3">
+                            <input type="checkbox" id="focusNoTimerToggle" onchange="toggleFocusTimerMode()" class="w-3.5 h-3.5 text-neutral-200 bg-neutral-950 border-neutral-800 focus:ring-0 rounded" checked>
+                            <label for="focusNoTimerToggle" class="ml-2 text-xs text-neutral-500 cursor-pointer">Stopwatch Mode (No Timer)</label>
+                        </div>
+                        <div id="focusTimerInputContainer" class="hidden flex items-center justify-between px-3 py-1 bg-neutral-950 rounded-xl border border-neutral-800">
+                            <span class="text-[9px] text-neutral-500 font-medium">Set Duration (min):</span>
+                            <input type="number" id="focusTimerMinutes" value="15" min="1" class="w-14 px-1.5 py-0.5 bg-neutral-900 border border-neutral-800 rounded text-center text-xs font-bold text-neutral-300 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 justify-end mt-6 pt-3 border-t border-neutral-800/60">
+                    <button onclick="closeFocusEditModal()" class="px-4 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded-xl text-xs font-semibold transition">Cancel</button>
+                    <button onclick="saveFocusEditSettings()" class="px-4 py-2 bg-neutral-100 hover:bg-white text-neutral-950 rounded-xl text-xs font-bold transition">Apply Changes</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Screen 2: Main Workspace Grid -->
+        <main id="workspaceContainer" class="hidden flex-grow p-4 md:p-6 max-w-5xl mx-auto w-full transition-all duration-300 relative">
+            
+            <!-- Sidebar toggle button dynamically placed here in Workspace view -->
+            <button onclick="toggleSidebarDrawer()" class="absolute top-4 left-4 group w-8 h-8 flex items-center justify-center rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 transition z-10" title="Toggle Sidebar">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-start mt-6">
+
+                <!-- Left Workspace Pane: Dynamic Controllers -->
+                <section id="configSidebar" class="md:col-span-4 flex flex-col gap-4 transition-all duration-300">
+                    <div class="bg-neutral-900/40 border border-neutral-800 rounded-2xl p-5 sticky top-6">
+                        <div>
+                            <span class="text-[9px] font-bold text-neutral-500 uppercase tracking-wider block mb-1.5">Question Size presets</span>
+                            <div class="grid grid-cols-4 gap-1.5 mb-2.5">
+                                <button onclick="setQuestionCount(10)" class="py-1 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 rounded-lg text-xs font-medium transition">10</button>
+                                <button onclick="setQuestionCount(20)" class="py-1 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 rounded-lg text-xs font-medium transition">20</button>
+                                <button onclick="setQuestionCount(50)" class="py-1 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 rounded-lg text-xs font-medium transition">50</button>
+                                <button onclick="setQuestionCount(100)" class="py-1 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 rounded-lg text-xs font-medium transition">100</button>
+                            </div>
+                            
+                            <!-- Dynamic Question Count Modifier -->
+                            <div class="flex items-center justify-between px-3 py-1 bg-neutral-950 rounded-xl border border-neutral-800">
+                                <span class="text-[9px] text-neutral-500 font-medium">Test Modification:</span>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="adjustQuestions(-1)" class="w-6 h-6 rounded bg-neutral-900 border border-neutral-800 font-bold text-xs hover:bg-neutral-800 transition">-1</button>
+                                    <span id="displayTotalCount" class="w-6 text-center font-bold text-neutral-300 text-xs">20</span>
+                                    <button onclick="adjustQuestions(1)" class="w-6 h-6 rounded bg-neutral-900 border border-neutral-800 font-bold text-xs hover:bg-neutral-800 transition">+1</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Timer Configurations -->
+                        <div class="mt-4 pt-4 border-t border-neutral-800">
+                            <span class="text-[9px] font-bold text-neutral-500 uppercase tracking-wider block mb-1.5">Timer Configurations</span>
+                            <div class="flex items-center mb-2">
+                                <input type="checkbox" id="noTimerToggle" onchange="toggleTimerMode()" class="w-3.5 h-3.5 text-neutral-200 bg-neutral-950 border-neutral-800 focus:ring-0 rounded" checked>
+                                <label for="noTimerToggle" class="ml-1.5 text-xs text-neutral-500 cursor-pointer">Stopwatch Mode (No Timer)</label>
+                            </div>
+                            <div id="timerInputContainer" class="hidden flex items-center justify-between px-3 py-1 bg-neutral-950 rounded-xl border border-neutral-800">
+                                <span class="text-[9px] text-neutral-500 font-medium">Set Duration (min):</span>
+                                <input type="number" id="timerMinutes" value="15" min="1" class="w-14 px-1.5 py-0.5 bg-neutral-900 border border-neutral-800 rounded text-center text-xs font-bold text-neutral-300 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- Live Timing Metadata -->
+                        <div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-neutral-800 text-center">
+                            <div class="p-2 bg-neutral-950 border border-neutral-800 rounded-xl">
+                                <span id="timerLabel" class="text-[8px] text-neutral-500 uppercase block tracking-wider font-semibold">Stopwatch</span>
+                                <span id="timerDisplay" class="text-sm font-mono font-bold text-white">00:00</span>
+                            </div>
+                            <div class="p-2 bg-neutral-950 border border-neutral-800 rounded-xl flex flex-col justify-center">
+                                <span class="text-[8px] text-neutral-500 uppercase block tracking-wider font-semibold">Active Type</span>
+                                <span id="workspaceBadge" class="text-[10px] font-bold block truncate text-neutral-300">Subject</span>
+                            </div>
+                        </div>
+
+                        <!-- Minimal Action Control Strip -->
+                        <div class="grid grid-cols-1 gap-2 mt-4">
+                            <button id="startBtn" onclick="startTest()" class="w-full py-2 bg-neutral-100 hover:bg-white text-neutral-950 text-xs font-bold rounded-xl transition shadow-sm">
+                                Start Test
+                            </button>
+                            <button id="submitBtn" onclick="calculateScorePrompt()" class="w-full py-2 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-300 text-xs font-bold rounded-xl transition shadow-sm" disabled>
+                                Grade & Save
+                            </button>
+                            <button id="resetBtn" onclick="resetTestPrompt()" class="w-full py-1.5 bg-neutral-950 border border-neutral-800 hover:bg-neutral-900 text-neutral-500 hover:text-neutral-400 text-xs font-semibold rounded-xl transition">
+                                Reset Sheet
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Right Workspace Pane: OMR Bubble Sheet Grid System -->
+                <section id="omrSidebar" class="md:col-span-8 flex flex-col transition-all duration-300">
+                    <div class="bg-neutral-900/20 rounded-3xl p-6 border border-neutral-800/80 shadow-sm flex-grow flex flex-col min-h-[500px] relative">
+                        <div class="flex items-center justify-between border-b border-neutral-900 pb-3 mb-4">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2.5 h-2.5 bg-white rounded-full animate-pulse"></span>
+                                <span class="text-xs font-bold text-neutral-100 tracking-tight">OMR Practice Matrix</span>
+                            </div>
+                        </div>
+
+                        <div class="flex-grow relative">
+                            <!-- Lock overlay when test is paused -->
+                            <div id="omrPauseOverlay" class="hidden absolute inset-0 bg-neutral-950/80 backdrop-blur-md rounded-2xl z-30 flex flex-col items-center justify-center gap-3 text-center border border-neutral-800/60">
+                                <span class="text-3xl animate-bounce">🔒</span>
+                                <div>
+                                    <h4 class="text-sm font-bold text-neutral-200">Practice Sheet Locked</h4>
+                                    <p class="text-[10px] text-neutral-500 mt-0.5">Resume the test from the focus header bar to fill answers.</p>
+                                </div>
+                                <button onclick="togglePause()" class="mt-1 px-4 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-semibold rounded-xl border border-neutral-700 transition">
+                                    Resume Practice
+                                </button>
+                            </div>
+
+                            <div id="omrContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 opacity-40 pointer-events-none transition-all duration-300">
+                                <!-- Dynamic Matrix Rows Injection -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Screen 3: Performance Dashboard -->
+        <section id="progressContainer" class="hidden flex-grow p-4 md:p-6 max-w-5xl mx-auto w-full relative">
+            <!-- Sidebar toggle button dynamically placed here in Dashboard view -->
+            <button onclick="toggleSidebarDrawer()" class="absolute top-4 left-4 group w-8 h-8 flex items-center justify-center rounded-lg bg-[#111] hover:bg-neutral-800 text-neutral-300 transition z-10" title="Toggle Sidebar">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+
+            <div class="bg-neutral-900/20 rounded-3xl p-6 border border-neutral-800/80 shadow-sm mb-6 mt-6">
+                <h2 class="text-sm font-bold text-neutral-100 mb-1 flex items-center gap-1.5">
+                    📈 Performance Timeline
+                </h2>
+                <p class="text-[10px] text-neutral-500 mb-6">Accuracy logs and historical test analysis records.</p>
+
+                <!-- Metadata Metrics -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center mb-6">
+                    <div class="bg-neutral-950 border border-neutral-800 p-4 rounded-2xl">
+                        <span class="text-[8px] text-neutral-500 font-bold uppercase tracking-wider block">Total Attempts</span>
+                        <span id="statTotalTests" class="text-base font-extrabold text-neutral-200">0</span>
+                    </div>
+                    <div class="bg-neutral-950 border border-neutral-800 p-4 rounded-2xl">
+                        <span class="text-[8px] text-emerald-500 font-bold uppercase tracking-wider block">Avg Accuracy</span>
+                        <span id="statAvgAccuracy" class="text-base font-extrabold text-emerald-400">0%</span>
+                    </div>
+                    <div class="bg-neutral-950 border border-neutral-800 p-4 rounded-2xl">
+                        <span class="text-[8px] text-neutral-500 font-bold uppercase tracking-wider block">Correct Answers</span>
+                        <span id="statTotalCorrect" class="text-base font-extrabold text-neutral-200">0</span>
+                    </div>
+                    <div class="bg-neutral-950 border border-neutral-800 p-4 rounded-2xl">
+                        <span class="text-[8px] text-rose-500 font-bold uppercase tracking-wider block">Wrong Answers</span>
+                        <span id="statTotalWrong" class="text-base font-extrabold text-rose-400">0</span>
+                    </div>
+                </div>
+
+                <!-- Dynamic Accuracy Progress Curves -->
+                <div class="mb-6">
+                    <h3 class="text-[10px] font-bold text-neutral-300 mb-2.5 flex items-center gap-1.5">
+                        📈 Score Curves
+                    </h3>
+                    <div class="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 relative h-36 flex items-end justify-between overflow-hidden">
+                        <div class="absolute inset-0 flex flex-col justify-between p-3 pointer-events-none opacity-[0.02]">
+                            <div class="border-b border-white w-full"></div>
+                            <div class="border-b border-white w-full"></div>
+                            <div class="border-b border-white w-full"></div>
+                        </div>
+                        <svg id="trendSvg" class="absolute inset-0 w-full h-full px-6 py-4" viewBox="0 0 100 100" preserveAspectRatio="none">
+                            <!-- Dynamic Coordinates -->
+                        </svg>
+                        <div id="noDataChartText" class="absolute inset-0 flex items-center justify-center text-neutral-600 text-[10px] font-medium tracking-wide">
+                            Submit a practice set to generate your accuracy curves.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Logs Grid -->
+                <div>
+                    <h3 class="text-[10px] font-bold text-neutral-300 mb-2 flex items-center gap-1.5">
+                        📋 History Log
+                    </h3>
+                    <div class="overflow-x-auto rounded-xl border border-neutral-800/80">
+                        <table class="w-full text-left border-collapse bg-neutral-950/40">
+                            <thead>
+                                <tr class="bg-neutral-950 text-neutral-500 uppercase text-[8px] tracking-wider font-bold border-b border-neutral-800">
+                                    <th class="p-3">#</th>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">Category</th>
+                                    <th class="p-3">Solved</th>
+                                    <th class="p-3 text-center">Correct</th>
+                                    <th class="p-3 text-center">Incorrect</th>
+                                    <th class="p-3 text-right">Accuracy</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody" class="text-xs text-neutral-400 divide-y divide-neutral-900">
+                                <tr>
+                                    <td colspan="7" class="p-6 text-center text-neutral-500 text-[10px] font-medium">Awaiting performance data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Storage & Authentication Pipelines (Firestore Connection & Offline Storage Engine) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'omr-prep-companion-eng';
+        const rawConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+        const initialToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let db = null;
+        let auth = null;
+        let user = null;
+        let useFallback = true;
+
+        const getLocalAccounts = () => JSON.parse(localStorage.getItem('omr_accounts_v3') || '{}');
+        const saveLocalAccounts = (accounts) => localStorage.setItem('omr_accounts_v3', JSON.stringify(accounts));
+        
+        let activeLocalSession = JSON.parse(localStorage.getItem('omr_active_user_v3') || 'null');
+
+        if (rawConfig) {
+            try {
+                const firebaseConfig = JSON.parse(rawConfig);
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                useFallback = false;
+
+                onAuthStateChanged(auth, async (currentUser) => {
+                    user = currentUser;
+                    if (currentUser) {
+                        const mobile = activeLocalSession ? activeLocalSession.mobile : null;
+                        if (mobile) {
+                            await syncUserSession(mobile);
+                        } else {
+                            onAuthSuccess("Guest Student", "guest_email@gmail.com", "Custom Exam Practice", "👤", "");
+                        }
+                    } else {
+                        onAuthSignedOut();
+                    }
+                });
+
+                if (initialToken) {
+                    await signInWithCustomToken(auth, initialToken).catch(async () => {
+                        await signInAnonymously(auth).catch(() => { useFallback = true; });
+                    });
+                } else {
+                    await signInAnonymously(auth).catch(() => { useFallback = true; });
+                }
+            } catch (err) {
+                console.warn("Firebase initialized with local storage fallback mode.", err);
+                useFallback = true;
+            }
+        }
+
+        window.executeMobileOTPLogin = async function(mobileNo) {
+            const emailIdentifier = `Phone: ${mobileNo}`;
+            activeLocalSession = { 
+                email: `${mobileNo}@omrprep.com`, 
+                mobile: mobileNo,
+                name: `Student #${mobileNo.slice(-4)}`,
+                exam: "General Competitive Exam",
+                avatar: "🎯",
+                photoUrl: ""
+            };
+
+            localStorage.setItem('omr_remembered_number', mobileNo);
+
+            const accounts = getLocalAccounts();
+            if (accounts[mobileNo]) {
+                activeLocalSession = { ...activeLocalSession, ...accounts[mobileNo].profile };
+            } else {
+                accounts[mobileNo] = { 
+                    profile: { 
+                        name: activeLocalSession.name, 
+                        email: activeLocalSession.email,
+                        exam: activeLocalSession.exam, 
+                        avatar: activeLocalSession.avatar,
+                        photoUrl: activeLocalSession.photoUrl
+                    },
+                    history: []
+                };
+                saveLocalAccounts(accounts);
+            }
+
+            localStorage.setItem('omr_active_user_v3', JSON.stringify(activeLocalSession));
+
+            if (!useFallback && db && auth) {
+                await syncUserSession(mobileNo);
+            } else {
+                onAuthSuccess(activeLocalSession.name, activeLocalSession.email, activeLocalSession.exam, activeLocalSession.avatar, activeLocalSession.photoUrl);
+            }
+            showToast("Authenticated successfully!");
+        };
+
+        async function syncUserSession(mobileNo) {
+            if (useFallback || !db) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', mobileNo);
+                const snapshot = await getDoc(docRef);
+                
+                if (snapshot.exists()) {
+                    const cloudData = snapshot.data();
+                    activeLocalSession.name = cloudData.name || activeLocalSession.name;
+                    activeLocalSession.email = cloudData.email || activeLocalSession.email;
+                    activeLocalSession.exam = cloudData.exam || activeLocalSession.exam;
+                    activeLocalSession.avatar = cloudData.avatar || activeLocalSession.avatar;
+                    activeLocalSession.photoUrl = cloudData.photoUrl || activeLocalSession.photoUrl;
+                    localStorage.setItem('omr_active_user_v3', JSON.stringify(activeLocalSession));
+                } else {
+                    await setDoc(docRef, {
+                        mobile: mobileNo,
+                        name: activeLocalSession.name,
+                        email: activeLocalSession.email,
+                        exam: activeLocalSession.exam,
+                        avatar: activeLocalSession.avatar,
+                        photoUrl: activeLocalSession.photoUrl,
+                        updatedAt: Date.now()
+                    });
+                }
+            } catch (e) {
+                console.warn("Could not sync profile, relying on local profile storage.", e);
+            }
+            onAuthSuccess(activeLocalSession.name, activeLocalSession.email, activeLocalSession.exam, activeLocalSession.avatar, activeLocalSession.photoUrl);
+        }
+
+        window.cloudSaveProfile = async function(updatedProfile) {
+            if (!activeLocalSession) return;
+            const mobileNo = activeLocalSession.mobile;
+            activeLocalSession = { ...activeLocalSession, ...updatedProfile };
+            localStorage.setItem('omr_active_user_v3', JSON.stringify(activeLocalSession));
+
+            const accounts = getLocalAccounts();
+            if (!accounts[mobileNo]) accounts[mobileNo] = { history: [] };
+            accounts[mobileNo].profile = updatedProfile;
+            saveLocalAccounts(accounts);
+
+            if (!useFallback && db) {
+                try {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'user_profiles', mobileNo);
+                    await setDoc(docRef, {
+                        mobile: mobileNo,
+                        name: updatedProfile.name,
+                        email: updatedProfile.email,
+                        exam: updatedProfile.exam,
+                        avatar: updatedProfile.avatar,
+                        photoUrl: updatedProfile.photoUrl,
+                        updatedAt: Date.now()
+                    }, { merge: true });
+                } catch (e) {
+                    console.error("Cloud profile sync failed:", e);
+                }
+            }
+            onAuthSuccess(activeLocalSession.name, activeLocalSession.email, activeLocalSession.exam, activeLocalSession.avatar, updatedProfile.photoUrl);
+        };
+
+        window.handleSignOut = async function() {
+            activeLocalSession = null;
+            localStorage.removeItem('omr_active_user_v3');
+            onAuthSignedOut();
+            showToast("Logged out successfully.");
+        };
+
+        function onAuthSuccess(name, email, exam, avatar, photoUrl) {
+            window.isUserLoggedIn = true;
+            
+            const dropdownUserName = document.getElementById('dropdownUserName');
+            if (dropdownUserName) {
+                dropdownUserName.innerText = name;
+            }
+            
+            const photoEl = document.getElementById('headerUserPhoto');
+            const avatarEl = document.getElementById('headerUserAvatar');
+            
+            if (photoUrl && photoUrl.trim() !== "") {
+                photoEl.src = photoUrl;
+                photoEl.classList.remove('hidden');
+                avatarEl.classList.add('hidden');
+                photoEl.onerror = function() {
+                    this.classList.add('hidden');
+                    avatarEl.classList.remove('hidden');
+                    avatarEl.innerText = avatar || "👤";
+                };
+            } else {
+                photoEl.classList.add('hidden');
+                avatarEl.classList.remove('hidden');
+                avatarEl.innerText = avatar || "👤";
+            }
+            
+            const sidebar = document.getElementById('appSidebar');
+            sidebar.classList.remove('hidden');
+            sidebar.classList.add('flex');
+            
+            document.getElementById('appContentWrapper').classList.add('pl-16');
+
+            document.getElementById('dropdownUserName').innerText = name;
+            document.getElementById('dropdownUserSub').innerText = exam;
+            
+            document.getElementById('authScreen').classList.add('hidden');
+            
+            // Redirect straight to category onboarding view mutual exclusively
+            document.getElementById('subjectScreen').classList.remove('hidden');
+            document.getElementById('workspaceContainer').classList.add('hidden');
+            document.getElementById('progressContainer').classList.add('hidden');
+            
+            document.getElementById('profileNameInput').value = name;
+            document.getElementById('profileEmailInput').value = email || "";
+            document.getElementById('profileExamInput').value = exam;
+            document.getElementById('profilePhotoInput').value = photoUrl || "";
+            
+            loadAndRenderProgress();
+        }
+
+        function onAuthSignedOut() {
+            window.isUserLoggedIn = false;
+            const sidebar = document.getElementById('appSidebar');
+            sidebar.classList.add('hidden');
+            sidebar.classList.remove('flex');
+            
+            document.getElementById('appContentWrapper').classList.remove('pl-16', 'pl-64');
+
+            document.getElementById('workspaceContainer').classList.add('hidden');
+            document.getElementById('progressContainer').classList.add('hidden');
+            document.getElementById('subjectScreen').classList.add('hidden');
+            document.getElementById('authScreen').classList.remove('hidden');
+            
+            const rememberedNumber = localStorage.getItem('omr_remembered_number');
+            if (rememberedNumber) {
+                document.getElementById('authMobile').value = rememberedNumber;
+            }
+        }
+
+        window.saveTestAttemptToCloud = async function(attemptRecord) {
+            if (!activeLocalSession) return;
+            const mobileNo = activeLocalSession.mobile;
+            attemptRecord.mobile = mobileNo;
+
+            if (!useFallback && db) {
+                try {
+                    const collectionPath = `artifacts/${appId}/public/data/test_history`;
+                    const docRef = collection(db, ...collectionPath.split('/'));
+                    await addDoc(docRef, attemptRecord);
+                    showToast("Saved securely to cloud database.");
+                } catch (err) {
+                    console.error("Firestore error, backing up locally:", err);
+                    saveToLocalFallback(attemptRecord);
+                }
+            } else {
+                saveToLocalFallback(attemptRecord);
+            }
+            loadAndRenderProgress();
+        };
+
+        window.fetchHistoryFromCloud = async function() {
+            if (!activeLocalSession) return [];
+            const mobileNo = activeLocalSession.mobile;
+
+            if (!useFallback && db) {
+                try {
+                    const collectionPath = `artifacts/${appId}/public/data/test_history`;
+                    const docRef = collection(db, ...collectionPath.split('/'));
+                    const snap = await getDocs(docRef);
+                    const list = [];
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        if (data.mobile === mobileNo) {
+                            list.push(data);
+                        }
+                    });
+                    list.sort((a,b) => b.timestamp - a.timestamp);
+                    return list;
+                } catch (err) {
+                    console.error("Cloud fetch failed, using local storage backup.", err);
+                    return getLocalFallback(mobileNo);
+                }
+            } else {
+                return getLocalFallback(mobileNo);
+            }
+        };
+
+        function saveToLocalFallback(record) {
+            if (!activeLocalSession) return;
+            const mobileNo = activeLocalSession.mobile;
+            const accounts = getLocalAccounts();
+            
+            if (!accounts[mobileNo]) {
+                accounts[mobileNo] = { history: [], profile: {} };
+            }
+            if (!accounts[mobileNo].history) accounts[mobileNo].history = [];
+            accounts[mobileNo].history.push(record);
+            saveLocalAccounts(accounts);
+            showToast("Saved securely to local storage.");
+        }
+
+        function getLocalFallback(mobileNo) {
+            const accounts = getLocalAccounts();
+            const userAccount = accounts[mobileNo];
+            return userAccount && userAccount.history ? userAccount.history.sort((a, b) => b.timestamp - a.timestamp) : [];
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const rememberedNumber = localStorage.getItem('omr_remembered_number');
+            if (rememberedNumber) {
+                document.getElementById('authMobile').value = rememberedNumber;
+            }
+
+            if (activeLocalSession) {
+                onAuthSuccess(activeLocalSession.name, activeLocalSession.email, activeLocalSession.avatar, activeLocalSession.photoUrl);
+            }
+        });
+    </script>
+
+    <!-- Main Application UI Thread Script -->
+    <script>
+        window.isUserLoggedIn = false;
+        let selectedSubject = '';
+        let totalQuestions = 20;
+        let testRunning = false;
+        let isPaused = false;
+        let timerInterval = null;
+        let secondsElapsed = 0;
+        let isCountDown = false;
+        let durationSeconds = 0;
+        let activeMockOtpCode = '';
+        let resendTimer = 30;
+        let resendInterval = null;
+        let selectedAvatar = '🎯';
+        let tempFocusQuestions = 20;
+        let isSidebarExpanded = false;
+
+        const AVATARS = ['🎯', '🧠', '🎓', '💻', '💡', '🚀', '🔥', '📊', '🏆', '⭐', '✏️', '🌍'];
+
+        function toggleSidebarDrawer() {
+            const sidebar = document.getElementById('appSidebar');
+            const appWrapper = document.getElementById('appContentWrapper');
+            isSidebarExpanded = !isSidebarExpanded;
+
+            if (isSidebarExpanded) {
+                sidebar.classList.remove('w-16');
+                sidebar.classList.add('w-64');
+                appWrapper.classList.remove('pl-16');
+                appWrapper.classList.add('pl-64');
+            } else {
+                sidebar.classList.remove('w-64');
+                sidebar.classList.add('w-16');
+                appWrapper.classList.remove('pl-64');
+                appWrapper.classList.add('pl-16');
+            }
+        }
+
+        function showToast(message, icon = "✨") {
+            const toast = document.getElementById('toastContainer');
+            const text = document.getElementById('toastText');
+            const iconEl = document.getElementById('toastIcon');
+
+            text.innerText = message;
+            iconEl.innerText = icon;
+
+            toast.classList.remove('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-[-20px]', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function showConfirm(title, text, proceedCallback) {
+            const modal = document.getElementById('confirmModal');
+            document.getElementById('confirmTitle').innerText = title;
+            document.getElementById('confirmText').innerText = text;
+
+            modal.classList.remove('hidden');
+
+            const cancelBtn = document.getElementById('confirmCancelBtn');
+            const proceedBtn = document.getElementById('confirmProceedBtn');
+
+            const cleanup = () => {
+                modal.classList.add('hidden');
+                cancelBtn.onclick = null;
+                proceedBtn.onclick = null;
+            };
+
+            cancelBtn.onclick = cleanup;
+            proceedBtn.onclick = () => {
+                proceedCallback();
+                cleanup();
+            };
+        }
+
+        function toggleProfileDropdown() {
+            const dropdown = document.getElementById('profileDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        window.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('profileDropdown');
+            const btn = document.getElementById('profileDropdownBtn');
+            if (dropdown && btn && !btn.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        // OTP Generation Flow
+        function sendMockOTP() {
+            const mobile = document.getElementById('authMobile').value.trim();
+            if (!mobile || mobile.length !== 10 || isNaN(mobile)) {
+                showToast("Please enter a valid 10-digit mobile number.", "⚠️");
+                return;
+            }
+
+            activeMockOtpCode = String(Math.floor(100000 + Math.random() * 900000));
+            document.getElementById('otpDisplayCode').innerText = activeMockOtpCode;
+
+            const banner = document.getElementById('otpDisplayBanner');
+            banner.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
+            banner.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                banner.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none');
+                banner.classList.remove('opacity-100', 'translate-y-0');
+            }, 10000);
+
+            document.getElementById('otpInputStage').classList.add('hidden');
+            document.getElementById('otpVerifyStage').classList.remove('hidden');
+
+            resendTimer = 30;
+            const resendBtn = document.getElementById('resendOtpBtn');
+            resendBtn.disabled = true;
+            resendBtn.innerText = `Resend OTP (In ${resendTimer}s)`;
+
+            clearInterval(resendInterval);
+            resendInterval = setInterval(() => {
+                resendTimer--;
+                if (resendTimer <= 0) {
+                    clearInterval(resendInterval);
+                    resendBtn.disabled = false;
+                    resendBtn.innerText = "Resend OTP";
+                } else {
+                    resendBtn.innerText = `Resend OTP (In ${resendTimer}s)`;
+                }
+            }, 1000);
+
+            showToast("OTP code generated successfully!");
+        }
+
+        function verifyMockOTP() {
+            const enteredOtp = document.getElementById('authOtpCode').value.trim();
+            if (enteredOtp !== activeMockOtpCode) {
+                showToast("Invalid OTP code. Please check again.", "⚠️");
+                return;
+            }
+
+            const mobile = document.getElementById('authMobile').value.trim();
+            if (window.executeMobileOTPLogin) {
+                window.executeMobileOTPLogin(mobile);
+            }
+        }
+
+        function backToOtpRequest() {
+            document.getElementById('otpVerifyStage').classList.add('hidden');
+            document.getElementById('otpInputStage').classList.remove('hidden');
+            clearInterval(resendInterval);
+        }
+
+        // Profile custom modal controller
+        function openProfileModal() {
+            const grid = document.getElementById('avatarSelectorGrid');
+            grid.innerHTML = '';
+            
+            AVATARS.forEach(av => {
+                const btn = document.createElement('button');
+                btn.className = `w-10 h-10 text-lg flex items-center justify-center rounded-xl border transition ${selectedAvatar === av ? 'bg-neutral-800 border-neutral-600 scale-105 shadow-sm' : 'bg-neutral-950 border-neutral-800 hover:bg-neutral-800'}`;
+                btn.innerText = av;
+                btn.onclick = () => {
+                    selectedAvatar = av;
+                    openProfileModal();
+                };
+                grid.appendChild(btn);
+            });
+
+            document.getElementById('profileModal').classList.remove('hidden');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.add('hidden');
+        }
+
+        function saveProfileData() {
+            const name = document.getElementById('profileNameInput').value.trim() || "Ramesh Kumar";
+            const email = document.getElementById('profileEmailInput').value.trim() || "";
+            const exam = document.getElementById('profileExamInput').value.trim() || "General Practice Series";
+            const photoUrl = document.getElementById('profilePhotoInput').value.trim() || "";
+
+            if (window.cloudSaveProfile) {
+                window.cloudSaveProfile({
+                    name: name,
+                    email: email,
+                    exam: exam,
+                    avatar: selectedAvatar,
+                    photoUrl: photoUrl
+                });
+            }
+            closeProfileModal();
+            showToast("Candidate profile settings updated!");
+        }
+
+        // Reset sheet utility
+        function resetTestWithoutPrompt() {
+            clearInterval(timerInterval);
+            testRunning = false;
+            isPaused = false;
+            omrState = {};
+
+            document.getElementById('omrPauseOverlay').classList.add('hidden');
+            document.getElementById('omrContainer').classList.remove('opacity-20');
+            document.getElementById('omrContainer').classList.add('opacity-40', 'pointer-events-none');
+            
+            document.getElementById('focusPauseBtn').className = "px-3.5 py-1.5 bg-neutral-900 border border-neutral-800 hover:border-neutral-700 text-neutral-300 text-xs font-bold rounded-xl transition flex items-center gap-1.5 shadow-sm";
+            document.getElementById('pauseBtnIcon').innerText = "⏸️";
+            document.getElementById('pauseBtnText').innerText = "Pause";
+            document.getElementById('focusIndicatorDot').className = "w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse";
+            document.getElementById('focusIndicatorText').innerText = "Exam Focus Mode Active";
+
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').classList.remove('opacity-50');
+            document.getElementById('submitBtn').disabled = true;
+
+            toggleTimerMode();
+            renderOMRSheet();
+        }
+
+        // Home Navigation Router
+        function goHome() {
+            if (testRunning) {
+                showConfirm(
+                    "Leave Practice Sheet?",
+                    "This will cancel your current test progress. Return to Category Selection?",
+                    () => {
+                        exitFocusMode(false);
+                        resetTestWithoutPrompt();
+                        selectedSubject = '';
+                        switchTab('workspace'); // Will redirect internally to categories
+                        showToast("Returned to Category Selection.");
+                    }
+                );
+            } else {
+                exitFocusMode(false);
+                resetTestWithoutPrompt();
+                selectedSubject = '';
+                switchTab('workspace');
+            }
+        }
+
+        function selectSubject(subject, themeClasses) {
+            selectedSubject = subject;
+            
+            const badge = document.getElementById('workspaceBadge');
+            badge.className = `text-[10px] font-bold block truncate px-2.5 py-0.5 rounded-lg ${themeClasses}`;
+            badge.innerText = subject;
+
+            if (subject === 'Full Mock Paper') {
+                totalQuestions = 100;
+            } else if (subject === 'Mixed Syllabus') {
+                totalQuestions = 50;
+            } else {
+                totalQuestions = 20;
+            }
+
+            resetTestWithoutPrompt();
+            switchTab('workspace');
+        }
+
+        // Render OMR Bubble rows with white text outline and Standard Bold styles
+        let omrState = {};
+        function renderOMRSheet() {
+            const container = document.getElementById('omrContainer');
+            container.innerHTML = '';
+            document.getElementById('displayTotalCount').innerText = totalQuestions;
+
+            for (let i = 1; i <= totalQuestions; i++) {
+                if (!omrState[i]) {
+                    omrState[i] = { selectedOption: null, status: null };
+                }
+
+                const state = omrState[i];
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between p-2 rounded-xl hover:bg-neutral-900/40 transition border border-transparent hover:border-neutral-800/60";
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-7 h-7 flex items-center justify-center bg-neutral-900 text-neutral-400 rounded-full text-[10px] font-bold border border-neutral-800">${i}</span>
+                        
+                        <!-- Options List (White Typography Medium style) -->
+                        <div class="flex gap-2">
+                            ${['A', 'B', 'C', 'D'].map(opt => `
+                                <div class="relative">
+                                    <input type="radio" name="q_${i}" id="q_${i}_${opt}" class="omr-bubble hidden" value="${opt}" 
+                                        ${state.selectedOption === opt ? 'checked' : ''} onclick="updateOption(${i}, '${opt}')">
+                                    <label for="q_${i}_${opt}" class="w-8 h-8 border border-neutral-400 bg-neutral-950 rounded-full flex items-center justify-center font-medium font-sans text-xs text-neutral-200 cursor-pointer select-none transition-all hover:bg-neutral-800 hover:border-white hover:scale-105">
+                                        ${opt}
+                                    </label>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Evaluation Status Toggles ('O' and '✕' markers) -->
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="toggleStatus(${i}, 'right')" class="status-btn w-6 h-6 rounded-lg border border-neutral-800 text-[11px] text-neutral-400 flex items-center justify-center hover:scale-105 transition hover:text-emerald-400 hover:border-emerald-800/80 ${state.status === 'right' ? 'active-right font-black' : ''}" title="Mark Right">
+                            O
+                        </button>
+                        <button onclick="toggleStatus(${i}, 'wrong')" class="status-btn w-6 h-6 rounded-lg border border-neutral-800 text-[10px] text-neutral-400 flex items-center justify-center hover:scale-105 transition hover:text-rose-400 hover:border-rose-800/80 ${state.status === 'wrong' ? 'active-wrong font-black' : ''}" title="Mark Wrong">
+                            ✕
+                        </button>
+                    </div>
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        function adjustQuestions(amount) {
+            let nextCount = totalQuestions + amount;
+            if (nextCount < 1) return;
+            totalQuestions = nextCount;
+
+            if (amount < 0 && omrState[nextCount + 1]) {
+                delete omrState[nextCount + 1];
+            }
+            renderOMRSheet();
+            showToast(`Sheet updated to ${totalQuestions} rows.`);
+        }
+
+        function setQuestionCount(count) {
+            if (testRunning) {
+                showConfirm(
+                    "Update Sheet Size?",
+                    "This will reset your ongoing practice session. Continue?",
+                    () => {
+                        totalQuestions = count;
+                        resetTestWithoutPrompt();
+                    }
+                );
+            } else {
+                totalQuestions = count;
+                resetTestWithoutPrompt();
+            }
+        }
+
+        function updateOption(qNum, value) {
+            if (!testRunning || isPaused) return;
+            omrState[qNum].selectedOption = value;
+        }
+
+        function toggleStatus(qNum, type) {
+            if (!testRunning || isPaused) return;
+            const current = omrState[qNum].status;
+            if (current === type) {
+                omrState[qNum].status = null;
+            } else {
+                omrState[qNum].status = type;
+            }
+            renderOMRSheet();
+        }
+
+        function toggleTimerMode() {
+            const isNoTimer = document.getElementById('noTimerToggle').checked;
+            const container = document.getElementById('timerInputContainer');
+            const label = document.getElementById('timerLabel');
+
+            if (isNoTimer) {
+                container.classList.add('hidden');
+                label.innerText = "Elapsed Time";
+                document.getElementById('timerDisplay').innerText = "00:00";
+                document.getElementById('focusTimerDisplay').innerText = "00:00";
+            } else {
+                container.classList.remove('hidden');
+                label.innerText = "Time Remaining";
+                const m = document.getElementById('timerMinutes').value || 15;
+                document.getElementById('timerDisplay').innerText = `${String(m).padStart(2, '0')}:00`;
+                document.getElementById('focusTimerDisplay').innerText = `${String(m).padStart(2, '0')}:00`;
+            }
+        }
+
+        function togglePause() {
+            if (!testRunning) return;
+            isPaused = !isPaused;
+
+            const overlay = document.getElementById('omrPauseOverlay');
+            const omrContainer = document.getElementById('omrContainer');
+            const pauseBtnIcon = document.getElementById('pauseBtnIcon');
+            const pauseBtnText = document.getElementById('pauseBtnText');
+            const focusPauseBtn = document.getElementById('focusPauseBtn');
+            const focusIndicatorDot = document.getElementById('focusIndicatorDot');
+            const focusIndicatorText = document.getElementById('focusIndicatorText');
+
+            if (isPaused) {
+                overlay.classList.remove('hidden');
+                omrContainer.classList.add('pointer-events-none', 'opacity-20');
+                pauseBtnIcon.innerText = "▶️";
+                pauseBtnText.innerText = "Resume";
+                focusPauseBtn.classList.remove('border-neutral-800');
+                focusPauseBtn.classList.add('border-emerald-600', 'bg-emerald-950/20');
+                focusIndicatorDot.classList.remove('bg-emerald-500');
+                focusIndicatorDot.classList.add('bg-amber-500');
+                focusIndicatorText.innerText = "Exam Practice Paused";
+                showToast("Practice Paused. Timer & OMR locked.", "⏸️");
+            } else {
+                overlay.classList.add('hidden');
+                omrContainer.classList.remove('pointer-events-none', 'opacity-20');
+                pauseBtnIcon.innerText = "⏸️";
+                pauseBtnText.innerText = "Pause";
+                focusPauseBtn.classList.remove('border-emerald-600', 'bg-emerald-950/20');
+                focusPauseBtn.classList.add('border-neutral-800');
+                focusIndicatorDot.classList.remove('bg-amber-500');
+                focusIndicatorDot.classList.add('bg-emerald-500');
+                focusIndicatorText.innerText = "Exam Focus Mode Active";
+                showToast("Practice Resumed.", "▶️");
+            }
+        }
+
+        // Focus Mode Direct Config Modal
+        function openFocusEditModal() {
+            if (!testRunning) return;
+            
+            tempFocusQuestions = totalQuestions;
+            document.getElementById('displayFocusTotalCount').innerText = tempFocusQuestions;
+
+            const isNoTimer = document.getElementById('noTimerToggle').checked;
+            document.getElementById('focusNoTimerToggle').checked = isNoTimer;
+            
+            const focusMinutesInput = document.getElementById('focusTimerMinutes');
+            focusMinutesInput.value = document.getElementById('timerMinutes').value;
+
+            toggleFocusTimerMode();
+            highlightActivePresetButton(tempFocusQuestions);
+
+            document.getElementById('focusEditModal').classList.remove('hidden');
+        }
+
+        function closeFocusEditModal() {
+            document.getElementById('focusEditModal').classList.add('hidden');
+        }
+
+        function toggleFocusTimerMode() {
+            const isNoTimer = document.getElementById('focusNoTimerToggle').checked;
+            const container = document.getElementById('focusTimerInputContainer');
+            if (isNoTimer) {
+                container.classList.add('hidden');
+            } else {
+                container.classList.remove('hidden');
+            }
+        }
+
+        function updateFocusQuestionPreset(count) {
+            tempFocusQuestions = count;
+            document.getElementById('displayFocusTotalCount').innerText = tempFocusQuestions;
+            highlightActivePresetButton(count);
+        }
+
+        function highlightActivePresetButton(count) {
+            const presets = [10, 20, 50, 100];
+            presets.forEach(p => {
+                const btn = document.getElementById(`focusPreset${p}`);
+                if (p === count) {
+                    btn.classList.add('bg-neutral-100', 'text-neutral-950', 'border-neutral-100');
+                    btn.classList.remove('bg-neutral-950', 'text-neutral-300', 'border-neutral-800');
+                } else {
+                    btn.classList.remove('bg-neutral-100', 'text-neutral-950', 'border-neutral-100');
+                    btn.classList.add('bg-neutral-950', 'text-neutral-300', 'border-neutral-800');
+                }
+            });
+        }
+
+        function adjustQuestionsInFocus(amount) {
+            let nextCount = tempFocusQuestions + amount;
+            if (nextCount < 1) return;
+            tempFocusQuestions = nextCount;
+            document.getElementById('displayFocusTotalCount').innerText = tempFocusQuestions;
+            highlightActivePresetButton(tempFocusQuestions);
+        }
+
+        function saveFocusEditSettings() {
+            const oldQuestionsCount = totalQuestions;
+            totalQuestions = tempFocusQuestions;
+
+            const targetNoTimer = document.getElementById('focusNoTimerToggle').checked;
+            const mainNoTimerCheckbox = document.getElementById('noTimerToggle');
+            
+            const oldNoTimer = mainNoTimerCheckbox.checked;
+            mainNoTimerCheckbox.checked = targetNoTimer;
+
+            const focusMinutesValue = parseInt(document.getElementById('focusTimerMinutes').value) || 15;
+            document.getElementById('timerMinutes').value = focusMinutesValue;
+
+            if (totalQuestions < oldQuestionsCount) {
+                for (let i = totalQuestions + 1; i <= oldQuestionsCount; i++) {
+                    delete omrState[i];
+                }
+            }
+
+            renderOMRSheet();
+
+            if (oldNoTimer !== targetNoTimer || (!targetNoTimer && document.getElementById('timerMinutes').value !== focusMinutesValue)) {
+                clearInterval(timerInterval);
+                isCountDown = !targetNoTimer;
+                if (isCountDown) {
+                    durationSeconds = focusMinutesValue * 60;
+                    if (secondsElapsed > 0) {
+                        durationSeconds = Math.max(0, durationSeconds - secondsElapsed);
+                    }
+                    runCountdown();
+                } else {
+                    runStopwatch();
+                }
+            }
+
+            toggleTimerMode();
+            closeFocusEditModal();
+            showToast("Configurations updated successfully!", "⚙️");
+        }
+
+        function enterFocusMode() {
+            document.getElementById('appSidebar').classList.add('hidden');
+            document.getElementById('appSidebar').classList.remove('flex');
+            
+            document.getElementById('appContentWrapper').classList.remove('pl-16', 'pl-64');
+            document.getElementById('configSidebar').classList.add('hidden');
+            
+            const omrPane = document.getElementById('omrSidebar');
+            omrPane.className = "md:col-span-12 max-w-3xl mx-auto w-full transition-all duration-300";
+
+            document.getElementById('focusHeaderBar').classList.remove('hidden');
+            document.getElementById('focusHeaderBar').classList.add('flex');
+        }
+
+        function exitFocusMode(pauseTimer = true) {
+            if (isPaused) {
+                togglePause();
+            }
+
+            const isLoggedIn = window.isUserLoggedIn;
+            if (isLoggedIn) {
+                const sidebar = document.getElementById('appSidebar');
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('flex');
+                
+                if (isSidebarExpanded) {
+                    document.getElementById('appContentWrapper').classList.add('pl-64');
+                } else {
+                    document.getElementById('appContentWrapper').classList.add('pl-16');
+                }
+            }
+            
+            document.getElementById('configSidebar').classList.remove('hidden');
+            
+            const omrPane = document.getElementById('omrSidebar');
+            omrPane.className = "md:col-span-8 flex flex-col transition-all duration-300";
+
+            document.getElementById('focusHeaderBar').classList.add('hidden');
+            document.getElementById('focusHeaderBar').classList.remove('flex');
+
+            if (pauseTimer && testRunning) {
+                showToast("Exited Focus Mode view.", "ℹ️");
+            }
+        }
+
+        function startTest() {
+            if (testRunning) return;
+            testRunning = true;
+            isPaused = false;
+            isCountDown = !document.getElementById('noTimerToggle').checked;
+
+            document.getElementById('omrContainer').classList.remove('opacity-40', 'pointer-events-none');
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').classList.add('opacity-50');
+            document.getElementById('submitBtn').disabled = false;
+
+            if (isCountDown) {
+                const mins = parseInt(document.getElementById('timerMinutes').value) || 15;
+                durationSeconds = mins * 60;
+                runCountdown();
+            } else {
+                secondsElapsed = 0;
+                runStopwatch();
+            }
+
+            enterFocusMode();
+            showToast("Focus Mode Active. Happy Practice!");
+        }
+
+        function runStopwatch() {
+            timerInterval = setInterval(() => {
+                if (isPaused) return;
+                secondsElapsed++;
+                updateTimerDisplay(secondsElapsed);
+            }, 1000);
+        }
+
+        function runCountdown() {
+            timerInterval = setInterval(() => {
+                if (isPaused) return;
+                if (durationSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    showToast("Timer expired! Grading sheet.", "🚨");
+                    calculateScore();
+                } else {
+                    durationSeconds--;
+                    updateTimerDisplay(durationSeconds);
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay(totalSecs) {
+            const m = Math.floor(totalSecs / 60);
+            const s = totalSecs % 60;
+            const timeStr = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            document.getElementById('timerDisplay').innerText = timeStr;
+            document.getElementById('focusTimerDisplay').innerText = timeStr;
+        }
+
+        function calculateScorePrompt() {
+            showConfirm(
+                "Submit & Save Test?",
+                "Are you sure you want to finish and calculate your score?",
+                () => {
+                    exitFocusMode(false);
+                    calculateScore();
+                }
+            );
+        }
+
+        async function calculateScore() {
+            clearInterval(timerInterval);
+            testRunning = false;
+            isPaused = false;
+
+            let attempted = 0;
+            let correct = 0;
+            let incorrect = 0;
+
+            for (let i = 1; i <= totalQuestions; i++) {
+                const data = omrState[i];
+                if (data && (data.selectedOption !== null || data.status !== null)) {
+                    attempted++;
+                }
+                if (data && data.status === 'right') {
+                    correct++;
+                } else if (data && data.status === 'wrong') {
+                    incorrect++;
+                }
+            }
+
+            const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+            const timeFormatted = document.getElementById('timerDisplay').innerText;
+
+            const attemptRecord = {
+                timestamp: Date.now(),
+                subject: selectedSubject,
+                totalQuestions: totalQuestions,
+                attempted: attempted,
+                correct: correct,
+                incorrect: incorrect,
+                accuracy: accuracy,
+                timeSpent: timeFormatted
+            };
+
+            if (window.saveTestAttemptToCloud) {
+                await window.saveTestAttemptToCloud(attemptRecord);
+            }
+
+            document.getElementById('omrContainer').classList.add('opacity-40', 'pointer-events-none');
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').classList.remove('opacity-50');
+
+            switchTab('progress');
+        }
+
+        function resetTestPrompt() {
+            showConfirm(
+                "Reset OMR Sheet?",
+                "This will clear all bubbles and reset timers. Are you sure?",
+                () => {
+                    exitFocusMode(false);
+                    resetTestWithoutPrompt();
+                    showToast("OMR sheet reset completed.");
+                }
+            );
+        }
+
+        // Mutual exclusion tab routes
+        function switchTab(tabId) {
+            const workspace = document.getElementById('workspaceContainer');
+            const progress = document.getElementById('progressContainer');
+            const onboarding = document.getElementById('subjectScreen');
+            const gateway = document.getElementById('authScreen');
+
+            workspace.classList.add('hidden');
+            progress.classList.add('hidden');
+            gateway.classList.add('hidden');
+            onboarding.classList.add('hidden');
+
+            // Robust validation checks
+            if (!window.isUserLoggedIn) {
+                gateway.classList.remove('hidden');
+                return;
+            }
+
+            if (tabId === 'workspace') {
+                if (!selectedSubject) {
+                    onboarding.classList.remove('hidden');
+                } else {
+                    workspace.classList.remove('hidden');
+                }
+            } else if (tabId === 'progress') {
+                progress.classList.remove('hidden');
+                loadAndRenderProgress();
+            }
+        }
+
+        async function loadAndRenderProgress() {
+            if (!window.fetchHistoryFromCloud) return;
+
+            const logs = await window.fetchHistoryFromCloud();
+            const historyBody = document.getElementById('historyTableBody');
+            historyBody.innerHTML = '';
+
+            if (logs.length === 0) {
+                historyBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="p-6 text-center text-neutral-500 text-[10px]">No historical results logged yet. Begin and submit a test.</td>
+                    </tr>
+                `;
+                document.getElementById('noDataChartText').classList.remove('hidden');
+                document.getElementById('trendSvg').innerHTML = '';
+                
+                document.getElementById('statTotalTests').innerText = "0";
+                document.getElementById('statAvgAccuracy').innerText = "0%";
+                document.getElementById('statTotalCorrect').innerText = "0";
+                document.getElementById('statTotalWrong').innerText = "0";
+                return;
+            }
+
+            document.getElementById('noDataChartText').classList.add('hidden');
+
+            let grandTotalCorrect = 0;
+            let grandTotalWrong = 0;
+            let totalAccuracySum = 0;
+
+            logs.forEach((log, idx) => {
+                grandTotalCorrect += log.correct;
+                grandTotalWrong += log.incorrect;
+                totalAccuracySum += log.accuracy;
+
+                const dateObj = new Date(log.timestamp);
+                const formattedDate = dateObj.toLocaleDateString('en-US') + " " + dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-neutral-900/20 transition border-b border-neutral-900";
+                tr.innerHTML = `
+                    <td class="p-3 font-bold text-neutral-500 text-[10px]">${logs.length - idx}</td>
+                    <td class="p-3 text-[11px] font-medium text-neutral-400">${formattedDate}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded-md bg-neutral-900 border border-neutral-800 text-neutral-300 font-semibold text-[10px]">${log.subject}</span></td>
+                    <td class="p-3 font-medium text-neutral-400 text-[11px]">${log.attempted} / ${log.totalQuestions}</td>
+                    <td class="p-3 text-center text-emerald-400 font-bold text-[11px]">${log.correct}</td>
+                    <td class="p-3 text-center text-rose-400 font-bold text-[11px]">${log.incorrect}</td>
+                    <td class="p-3 text-right font-extrabold text-neutral-200 text-[11px]">${log.accuracy}%</td>
+                `;
+                historyBody.appendChild(tr);
+            });
+
+            document.getElementById('statTotalTests').innerText = logs.length;
+            document.getElementById('statAvgAccuracy').innerText = Math.round(totalAccuracySum / logs.length) + "%";
+            document.getElementById('statTotalCorrect').innerText = grandTotalCorrect;
+            document.getElementById('statTotalWrong').innerText = grandTotalWrong;
+
+            const trendSvg = document.getElementById('trendSvg');
+            trendSvg.innerHTML = '';
+
+            const maxPoints = Math.min(10, logs.length);
+            const recentLogs = logs.slice(0, maxPoints).reverse();
+
+            if (recentLogs.length > 0) {
+                const width = 100;
+                const height = 100;
+                const padding = 12;
+                const usableWidth = width - (padding * 2);
+                const usableHeight = height - (padding * 2);
+
+                let pointsStr = '';
+                recentLogs.forEach((log, idx) => {
+                    const x = padding + (idx * (usableWidth / (recentLogs.length - 1 || 1)));
+                    const y = (height - padding) - (log.accuracy / 100 * usableHeight);
+                    pointsStr += `${x},${y} `;
+
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("cx", x);
+                    circle.setAttribute("cy", y);
+                    circle.setAttribute("r", "1.5");
+                    circle.setAttribute("fill", "#ffffff");
+                    circle.setAttribute("stroke", "#050505");
+                    circle.setAttribute("stroke-width", "0.4");
+                    
+                    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    text.setAttribute("x", x);
+                    text.setAttribute("y", y - 3);
+                    text.setAttribute("fill", "#a3a3a3");
+                    text.setAttribute("font-size", "2.2");
+                    text.setAttribute("font-weight", "bold");
+                    text.setAttribute("text-anchor", "middle");
+                    text.textContent = `${log.accuracy}%`;
+
+                    trendSvg.appendChild(circle);
+                    trendSvg.appendChild(text);
+                });
+
+                const polyline = document.createElementNS("http://www.w3.org/2000/svg", "polyline");
+                polyline.setAttribute("fill", "none");
+                polyline.setAttribute("stroke", "#ffffff");
+                polyline.setAttribute("stroke-width", "0.8");
+                polyline.setAttribute("stroke-linecap", "round");
+                polyline.setAttribute("points", pointsStr.trim());
+                trendSvg.insertBefore(polyline, trendSvg.firstChild);
+            }
+        }
+    </script>
+</body>
+</html>
